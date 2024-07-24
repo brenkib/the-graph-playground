@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "BrenkibNFT": {
+      "address": "0x478b5CD12F00C1e1804bF1A2D879930b47Fa64bb",
+      "startBlock": 6352275
+    }
+  }
+}
