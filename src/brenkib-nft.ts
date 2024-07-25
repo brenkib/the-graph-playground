@@ -1,106 +1,55 @@
-import {
-  Approval as ApprovalEvent,
-  ApprovalForAll as ApprovalForAllEvent,
-  BatchMetadataUpdate as BatchMetadataUpdateEvent,
-  MetadataUpdate as MetadataUpdateEvent,
-  OwnershipTransferred as OwnershipTransferredEvent,
-  Transfer as TransferEvent
-} from "../generated/BrenkibNFT/BrenkibNFT"
-import {
-  Approval,
-  ApprovalForAll,
-  BatchMetadataUpdate,
-  MetadataUpdate,
-  OwnershipTransferred,
-  Transfer
-} from "../generated/schema"
-
-export function handleApproval(event: ApprovalEvent): void {
-  let entity = new Approval(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.owner = event.params.owner
-  entity.approved = event.params.approved
-  entity.tokenId = event.params.tokenId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleApprovalForAll(event: ApprovalForAllEvent): void {
-  let entity = new ApprovalForAll(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.owner = event.params.owner
-  entity.operator = event.params.operator
-  entity.approved = event.params.approved
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleBatchMetadataUpdate(
-  event: BatchMetadataUpdateEvent
-): void {
-  let entity = new BatchMetadataUpdate(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity._fromTokenId = event.params._fromTokenId
-  entity._toTokenId = event.params._toTokenId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleMetadataUpdate(event: MetadataUpdateEvent): void {
-  let entity = new MetadataUpdate(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity._tokenId = event.params._tokenId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleOwnershipTransferred(
-  event: OwnershipTransferredEvent
-): void {
-  let entity = new OwnershipTransferred(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.previousOwner = event.params.previousOwner
-  entity.newOwner = event.params.newOwner
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
+import {Transfer as TransferEvent, BrenkibNFT} from "../generated/BrenkibNFT/BrenkibNFT"
+import {Token, Owner, TokenMetadata} from "../generated/schema"
+import {BigInt, json, Bytes, dataSource} from "@graphprotocol/graph-ts";
+import { TokenMetadata as TokenMetadataTemplate } from '../generated/templates'
 
 export function handleTransfer(event: TransferEvent): void {
-  let entity = new Transfer(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.from = event.params.from
-  entity.to = event.params.to
-  entity.tokenId = event.params.tokenId
+    if (event.params && event.params.tokenId && event.address) {
+        let token = Token.load(event.params.tokenId.toString() + "-" + event.address.toHex())
+        if (!token) {
+            token = new Token(event.params.tokenId.toString())
+            token.tokenID = event.params.tokenId
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
+            const nftMetadataURI = `https://arweave.net/uGsun6UTDCuqpCj9nC9yQALz98tWVUJZ2GJItUBsB3U`;
+            token.tokenURI = "uGsun6UTDCuqpCj9nC9yQALz98tWVUJZ2GJItUBsB3U";
+            token.ardriveURI = nftMetadataURI;
 
-  entity.save()
+            TokenMetadataTemplate.create(nftMetadataURI)
+        }
+
+        token.createdAtTimestamp = event.block.timestamp
+        token.owner = event.params.to;
+        token.save()
+
+        let owner = Owner.load(event.params.to);
+        let balance = BigInt.fromI32(1);
+        if (!owner) {
+            owner = new Owner(event.params.to);
+            owner.balance = balance;
+        } else {
+            balance = owner.balance;
+            owner.balance = balance + BigInt.fromI32( 1);
+        }
+        owner.save();
+    }
+}
+
+export function handleMetadata(content: Bytes): void {
+    let tokenMetadata = new TokenMetadata(dataSource.stringParam())
+    const value = json.fromBytes(content).toObject()
+    if (value) {
+        const image = value.get('image')
+        const name = value.get('name')
+        const description = value.get('description')
+        const externalURL = value.get('external_url')
+
+        if (name && image && description && externalURL) {
+            tokenMetadata.name = name.toString()
+            tokenMetadata.image = image.toString()
+            tokenMetadata.externalURL = externalURL.toString()
+            tokenMetadata.description = description.toString()
+        }
+
+        tokenMetadata.save()
+    }
 }

@@ -41,7 +41,7 @@ export function createApprovalForAllEvent(
 ): ApprovalForAll {
   let approvalForAllEvent = changetype<ApprovalForAll>(newMockEvent())
 
-  approvalForAllEvent.parameters = new Array()
+  approvalForAllEvent.parameters = []
 
   approvalForAllEvent.parameters.push(
     new ethereum.EventParam("owner", ethereum.Value.fromAddress(owner))
@@ -62,7 +62,7 @@ export function createBatchMetadataUpdateEvent(
 ): BatchMetadataUpdate {
   let batchMetadataUpdateEvent = changetype<BatchMetadataUpdate>(newMockEvent())
 
-  batchMetadataUpdateEvent.parameters = new Array()
+  batchMetadataUpdateEvent.parameters = []
 
   batchMetadataUpdateEvent.parameters.push(
     new ethereum.EventParam(
