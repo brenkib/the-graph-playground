@@ -32,7 +32,7 @@ templates:
     mapping:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/brenkib-nft.ts
+      file: ./src/brenkib-nft-metadata.ts
       handler: handleMetadata
       entities:
         - TokenMetadata
